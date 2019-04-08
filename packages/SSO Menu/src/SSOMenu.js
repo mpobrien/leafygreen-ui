@@ -68,8 +68,8 @@ export default class SSOMenu extends Component {
   static defaultProps = {
     userInfo: { name: '', email: '' },
     activeTab: '',
-    onProductChange: () => { },
-    onAccountClick: () => { },
+    onProductChange: () => {},
+    onAccountClick: () => {},
   };
 
   constructor(props) {
