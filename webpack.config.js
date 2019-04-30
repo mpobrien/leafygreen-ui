@@ -24,8 +24,20 @@ module.exports = function(env = 'production') {
           'create-emotion',
           'polished',
           'prop-types',
-          '@leafygreen-ui/lib',
-          '@leafygreen-ui/theme',
+          ...[
+            'badge',
+            'button',
+            'checkbox',
+            'icon',
+            'lib',
+            'menu',
+            'popover',
+            'portal',
+            'radio-box-group',
+            'radio-group',
+            'theme',
+            'toggle',
+          ].map(pkg => `@leafygreen-ui/${pkg}`),
         ]
       : [],
 
