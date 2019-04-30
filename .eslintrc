@@ -41,7 +41,8 @@
     "no-var": 1, 
     "prefer-const": 1
   },
-  "overrides": [{
+  "overrides": [
+    {
       "files": ["packages/**/*.js"],
       "excludedFiles": ["*.spec.js", "*.story.js"],
       "env": {

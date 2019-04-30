@@ -271,6 +271,7 @@ export default class Popover extends Component<Props, State> {
 
     switch (alignment) {
       case 'left':
+
       case 'right': {
         justifications = {
           start: ['top', 'bottom', 'center-vertical'],
@@ -282,6 +283,7 @@ export default class Popover extends Component<Props, State> {
 
       case 'top':
       case 'bottom':
+
       default: {
         justifications = {
           start: ['left', 'right', 'center-horizontal'],
@@ -586,14 +588,7 @@ export default class Popover extends Component<Props, State> {
   createRefEl = React.createRef<HTMLDivElement>();
 
   render() {
-    const {
-      children,
-      active,
-      className,
-      withoutPortal,
-      refEl,
-      ...rest
-    } = this.props;
+    const { children, active, className, withoutPortal, ...rest } = this.props;
 
     const position = this.calculatePosition();
 
