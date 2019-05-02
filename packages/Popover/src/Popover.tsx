@@ -118,7 +118,7 @@ export default class Popover extends Component<Props & DefaultProps, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
-    const { align, justify } = this.props;
+    const { align, justify , active } = this.props;
     const {
       windowWidth,
       windowHeight,
@@ -126,8 +126,7 @@ export default class Popover extends Component<Props & DefaultProps, State> {
       referenceElPos,
     } = this.state;
 
-    const posPropsUpdated =
-      prevProps.align !== align || prevProps.justify !== justify;
+    const posPropsUpdated = prevProps.active !== active || prevProps.align !== align || prevProps.justify !== justify;
 
     const windowUpdated =
       prevState.windowWidth !== windowWidth ||
