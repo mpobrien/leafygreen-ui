@@ -322,8 +322,10 @@ export default class Popover extends Component<Props & DefaultProps, State> {
     };
 
     switch (alignment) {
-      case 'left':
+      case 'left': // eslint-disable-line no-fallthrough
+
       case 'right': {
+        // eslint-disable-line no-fallthrough
         justifications = {
           start: ['top', 'bottom', 'center-vertical'],
           middle: ['center-vertical', 'bottom', 'top'],
@@ -333,7 +335,8 @@ export default class Popover extends Component<Props & DefaultProps, State> {
       }
 
       case 'top':
-      case 'bottom':
+      case 'bottom': // eslint-disable-line no-fallthrough
+
       default: {
         justifications = {
           start: ['left', 'right', 'center-horizontal'],

@@ -20,6 +20,7 @@ const menuButtonStyle = css`
   color: ${colors.gray[4]};
   font-size: 12px;
   line-height: 15px;
+  position: relative;
 
   &:hover {
     background-color: ${colors.gray[7]};
@@ -34,7 +35,7 @@ const menuButtonStyle = css`
 const activeMenuButtonStyle = css`
   background-color: ${colors.gray[5]};
   color: ${colors.mongodb.white};
-  
+
   &:hover {
     background-color: ${colors.gray[5]};
     color: ${colors.mongodb.white};
@@ -131,11 +132,11 @@ const menuItems: {
 ];
 
 interface Props {
-  userInfo: {name: string, email: string},
-  activeProduct: string,
-  onLogout: Function, 
-  onProductChange: Function,
-  onAccountClick: Function,
+  userInfo: { name: string; email: string };
+  activeProduct: string;
+  onLogout: Function;
+  onProductChange: Function;
+  onAccountClick: Function;
 }
 
 interface State {
@@ -147,8 +148,8 @@ export default class SSOMenu extends React.Component<Props, State> {
 
   static propTypes = {
     userInfo: PropTypes.object,
-    activeProduct: PropTypes.oneOf(['atlas', 'support','university']), 
-    onLogout: PropTypes.func, 
+    activeProduct: PropTypes.oneOf(['atlas', 'support', 'university']),
+    onLogout: PropTypes.func,
     onProductChange: PropTypes.func,
     onAccountClick: PropTypes.func,
   };
@@ -195,31 +196,41 @@ export default class SSOMenu extends React.Component<Props, State> {
     document.removeEventListener('click', this.handleEscape);
   };
 
-
   render() {
-    const activeButtonStyle = this.state.active && activeMenuButtonStyle
+    const activeButtonStyle = this.state.active && activeMenuButtonStyle;
 
-    const { active } = this.state
-    const { userInfo: { name, email }, activeProduct, onLogout, onProductChange, onAccountClick } = this.props
+    const { active } = this.state;
+    const {
+      userInfo: { name, email },
+      activeProduct,
+      onLogout,
+      onProductChange,
+      onAccountClick,
+    } = this.props;
     return (
-      <>
-        <button
-          className={cx(menuButtonStyle, activeButtonStyle)}
-          ref={this.triggerRef}
-          type="button"
-          onClick={this.toggleActive}
-        >
-          <span style={{marginRight: '2px'}}>{name}</span>
-          {active ? 
-            <Icon glyph="CaretUp" fill={colors.mongodb.white}/> :
-            <Icon glyph="CaretDown" fill={colors.gray[4]}/> 
-          }
-        </button>
-        <Menu active={active} refEl={this.triggerRef}>
+      <button
+        className={cx(menuButtonStyle, activeButtonStyle)}
+        ref={this.triggerRef}
+        type="button"
+        onClick={this.toggleActive}
+      >
+        <span style={{ marginRight: '2px' }}>{name}</span>
+        {active ? (
+          <Icon glyph="CaretUp" fill={colors.mongodb.white} />
+        ) : (
+          <Icon glyph="CaretDown" fill={colors.gray[4]} />
+        )}
+        <Menu active={active} align="bottom" justify="end">
           <MenuList className={accountMenuListStyle}>
             <h3 className={cx(nameStyle, truncate)}>{name}</h3>
             <p className={descriptionStyle}>{email}</p>
-            <Button className={accountButtonStyle} size="small" onClick={onAccountClick}>MongoDB Account</Button>
+            <Button
+              className={accountButtonStyle}
+              size="small"
+              onClick={onAccountClick}
+            >
+              MongoDB Account
+            </Button>
           </MenuList>
           <MenuList>
             {menuItems.map(el => (
@@ -227,7 +238,7 @@ export default class SSOMenu extends React.Component<Props, State> {
                 onSelect={onProductChange}
                 key={el.displayName}
                 className={cx(productContainerHeight, {
-                  [activeMenuItemStyle]: el.slug === activeProduct
+                  [activeMenuItemStyle]: el.slug === activeProduct,
                 })}
               >
                 <p className={menuItemTextStyle}>{el.displayName}</p>
@@ -237,11 +248,14 @@ export default class SSOMenu extends React.Component<Props, State> {
               </MenuItem>
             ))}
           </MenuList>
-          <MenuItem onSelect={onLogout} className={cx(logoutContainerHeight, menuItemTextStyle)}>
+          <MenuItem
+            onSelect={onLogout}
+            className={cx(logoutContainerHeight, menuItemTextStyle)}
+          >
             Logout
           </MenuItem>
         </Menu>
-      </>
+      </button>
     );
   }
 }
