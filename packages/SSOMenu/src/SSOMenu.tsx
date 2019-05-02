@@ -209,56 +209,61 @@ export default class SSOMenu extends React.Component<Props, State> {
     } = this.props;
     return (
       <>
-      <button
-        className={cx(menuButtonStyle, activeButtonStyle)}
-        ref={this.triggerRef}
-        type="button"
-        onClick={this.toggleActive}
-      >
-        <span style={{ marginRight: '2px' }}>{name}</span>
-        {active ? (
-          <Icon glyph="CaretUp" fill={colors.mongodb.white} />
-        ) : (
-          <Icon glyph="CaretDown" fill={colors.gray[4]} />
-        )}
-      </button>
-      
-      <Menu active={active} align="bottom" justify="end" refEl={this.triggerRef}>
-        <MenuList className={accountMenuListStyle}>
-          <h3 className={cx(nameStyle, truncate)}>{name}</h3>
-          <p className={descriptionStyle}>{email}</p>
-          <Button
-            className={accountButtonStyle}
-            size="small"
-            onClick={onAccountClick}
-          >
-            MongoDB Account
-          </Button>
-        </MenuList>
-        <MenuList>
-          {menuItems.map(el => (
-            <MenuItem
-              onSelect={onProductChange}
-              key={el.displayName}
-              className={cx(productContainerHeight, {
-                [activeMenuItemStyle]: el.slug === activeProduct,
-              })}
-            >
-              <p className={menuItemTextStyle}>{el.displayName}</p>
-              <a href={el.href} className={descriptionStyle}>
-                {el.description}
-              </a>
-            </MenuItem>
-          ))}
-        </MenuList>
-        <MenuItem
-          onSelect={onLogout}
-          className={cx(logoutContainerHeight, menuItemTextStyle)}
+        <button
+          className={cx(menuButtonStyle, activeButtonStyle)}
+          ref={this.triggerRef}
+          type="button"
+          onClick={this.toggleActive}
         >
-          Logout
-        </MenuItem>
-      </Menu>
-    </>
+          <span style={{ marginRight: '2px' }}>{name}</span>
+          {active ? (
+            <Icon glyph="CaretUp" fill={colors.mongodb.white} />
+          ) : (
+            <Icon glyph="CaretDown" fill={colors.gray[4]} />
+          )}
+        </button>
+
+        <Menu
+          active={active}
+          align="bottom"
+          justify="end"
+          refEl={this.triggerRef}
+        >
+          <MenuList className={accountMenuListStyle}>
+            <h3 className={cx(nameStyle, truncate)}>{name}</h3>
+            <p className={descriptionStyle}>{email}</p>
+            <Button
+              className={accountButtonStyle}
+              size="small"
+              onClick={onAccountClick}
+            >
+              MongoDB Account
+            </Button>
+          </MenuList>
+          <MenuList>
+            {menuItems.map(el => (
+              <MenuItem
+                onSelect={onProductChange}
+                key={el.displayName}
+                className={cx(productContainerHeight, {
+                  [activeMenuItemStyle]: el.slug === activeProduct,
+                })}
+              >
+                <p className={menuItemTextStyle}>{el.displayName}</p>
+                <a href={el.href} className={descriptionStyle}>
+                  {el.description}
+                </a>
+              </MenuItem>
+            ))}
+          </MenuList>
+          <MenuItem
+            onSelect={onLogout}
+            className={cx(logoutContainerHeight, menuItemTextStyle)}
+          >
+            Logout
+          </MenuItem>
+        </Menu>
+      </>
     );
   }
 }
