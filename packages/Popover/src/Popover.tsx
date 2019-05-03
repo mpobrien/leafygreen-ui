@@ -2,6 +2,18 @@ import React, { Component, Fragment, ReactNode, RefObject } from 'react';
 import PropTypes from 'prop-types';
 import Portal from '@leafygreen-ui/portal';
 import { emotion } from '@leafygreen-ui/lib';
+import { RefPosition, Align, Justify } from '.';
+import {
+  getAlignment,
+  getJustification,
+  getTransformOrigin,
+  getTransform,
+  calcTop,
+  calcLeft,
+  getRefPosition,
+  defaultRefPosition,
+  calcPositionWithoutPortal,
+} from './popoverUtilities';
 
 const { css, cx } = emotion;
 
@@ -11,60 +23,6 @@ const rootPopoverStyle = css`
   pointer-events: none;
   opacity: 0;
 `;
-
-type RefPosition = {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-  height: number;
-  width: number;
-};
-
-type AbsolutePositionObject = {
-  top?: string | number;
-  bottom?: string | number;
-  left?: string | number;
-  right?: string | number;
-};
-
-const defaultRefPosition = {
-  top: 0,
-  bottom: 0,
-  left: 0,
-  right: 0,
-  height: 0,
-  width: 0,
-};
-
-enum Align {
-  top = 'top',
-  bottom = 'bottom',
-  left = 'left',
-  right = 'right',
-}
-
-enum Justify {
-  start = 'start',
-  middle = 'middle',
-  end = 'end',
-}
-
-// We transform 'middle' into 'center-vertical' or 'center-horizontal' for internal use,
-// So both Justify and Justification are needed, where the same is not true for Alignment.
-enum Justification {
-  top = 'top',
-  bottom = 'bottom',
-  left = 'left',
-  right = 'right',
-  'center-vertical' = 'center-vertical',
-  'center-horizontal' = 'center-horizontal',
-}
-
-type AbstractPosition = {
-  alignment?: Align;
-  justification?: Justification;
-};
 
 interface Props {
   children?: ReactNode;
@@ -154,20 +112,32 @@ export default class Popover extends Component<Props, State> {
   }
 
   handleWindowResize = () => {
+    const { contentElPos } = this.state;
+
     this.setState(
       {
         windowHeight: window.innerHeight,
         windowWidth: window.innerWidth,
       },
       () => {
-        this.setContentElPosition();
+        if (!contentElPos) {
+          const contentEl = this.contentRef && this.contentRef.current;
+
+          if (contentEl) {
+            this.setState({
+              contentElPos: getRefPosition(contentEl),
+            });
+          }
+
+          return;
+        }
       },
     );
   };
 
   updateReferencePositions() {
     const { referenceElement } = this.state;
-    const newReferenceElPos = this.getRefPosition(referenceElement);
+    const newReferenceElPos = getRefPosition(referenceElement);
     const contentEl = this.contentRef && this.contentRef.current;
 
     if (!contentEl) {
@@ -179,7 +149,7 @@ export default class Popover extends Component<Props, State> {
     }
 
     this.setState({
-      contentElPos: this.getRefPosition(contentEl),
+      contentElPos: getRefPosition(contentEl),
       referenceElPos: newReferenceElPos,
     });
   }
@@ -193,7 +163,7 @@ export default class Popover extends Component<Props, State> {
     if (referenceElement) {
       if (!referenceElPos) {
         this.setState({
-          referenceElPos: this.getRefPosition(referenceElement),
+          referenceElPos: getRefPosition(referenceElement),
         });
       }
 
@@ -218,37 +188,14 @@ export default class Popover extends Component<Props, State> {
 
     this.setState({
       referenceElement: newReferenceElement,
-      referenceElPos: this.getRefPosition(newReferenceElement),
+      referenceElPos: getRefPosition(newReferenceElement),
     });
-  }
-
-  setContentElPosition() {
-    const { contentElPos } = this.state;
-    const contentEl = this.contentRef && this.contentRef.current;
-
-    if (contentEl && !contentElPos) {
-      this.setState({
-        contentElPos: this.getRefPosition(contentEl),
-      });
-    }
-  }
-
-  // Gets top offset, left offset, width and height dimensions for a node
-  getRefPosition(element: HTMLElement | null) {
-    if (!element) {
-      return defaultRefPosition;
-    }
-
-    const { top, bottom, left, right } = element.getBoundingClientRect();
-    const { offsetHeight: height, offsetWidth: width } = element;
-
-    return { top, bottom, left, right, height, width };
   }
 
   // Returns the style object that is used to position and transition the popover component
   calculatePosition() {
-    const { usePortal } = this.props;
-    const { referenceElement, contentElPos } = this.state;
+    const { usePortal, align, justify } = this.props;
+    const { referenceElement, referenceElPos, contentElPos } = this.state;
 
     // Forced second render to make sure that
     // we have access to refs
@@ -261,356 +208,53 @@ export default class Popover extends Component<Props, State> {
       return;
     }
 
+    const contentEl = this.contentRef && this.contentRef.current;
+
     if (!contentElPos) {
-      this.setContentElPosition();
+      if (contentEl) {
+        this.setState({
+          contentElPos: getRefPosition(contentEl),
+        });
+      }
+
       return;
     }
 
-    const alignment = this.getAlignment();
-    const justification = this.getJustification(alignment);
+    const alignment = getAlignment(referenceElPos, contentElPos, align);
+    const justification = getJustification(
+      referenceElPos,
+      contentElPos,
+      alignment,
+      justify,
+    );
 
-    const transformOrigin = this.getTransformOrigin({
+    const transformOrigin = getTransformOrigin({
       alignment,
       justification,
     });
 
-    const transform = this.getTransform(alignment);
+    const transform = getTransform(alignment);
 
     if (!usePortal) {
       return {
-        ...this.calcPositionWithoutPortal({ alignment, justification }),
+        ...calcPositionWithoutPortal(referenceElPos, contentElPos, {
+          alignment,
+          justification,
+        }),
         transformOrigin,
         transform,
       };
     }
 
     return {
-      top: this.calcTop({ alignment, justification }),
-      left: this.calcLeft({ alignment, justification }),
+      top: calcTop(referenceElPos, contentElPos, { alignment, justification }),
+      left: calcLeft(referenceElPos, contentElPos, {
+        alignment,
+        justification,
+      }),
       transformOrigin,
       transform,
     };
-  }
-
-  // Determines the alignment to render based on an order of alignment fallbacks
-  // Returns the first alignment that doesn't collide with the window,
-  // defaulting to the align prop if all alignments fail.
-  getAlignment() {
-    const { align } = this.props;
-
-    const alignments: {
-      top: ReadonlyArray<Align>;
-      bottom: ReadonlyArray<Align>;
-      left: ReadonlyArray<Align>;
-      right: ReadonlyArray<Align>;
-    } = {
-      top: [Align.top, Align.bottom],
-      bottom: [Align.bottom, Align.top],
-      left: [Align.left, Align.right],
-      right: [Align.right, Align.left],
-    };
-
-    return (
-      alignments[align].find(candidate => this.checkAlignment(candidate)) ||
-      align
-    );
-  }
-
-  // Determines the justification to render based on an order of justification fallbacks
-  // Returns the first justification that doesn't collide with the window,
-  // defaulting to the justify prop if all justifications fail.
-  getJustification(alignment: Align) {
-    const { justify } = this.props;
-
-    let justifications: {
-      start: ReadonlyArray<Justification>;
-      middle: ReadonlyArray<Justification>;
-      end: ReadonlyArray<Justification>;
-    };
-
-    switch (alignment) {
-      case 'left':
-      case 'right': {
-        justifications = {
-          start: [
-            Justification.top,
-            Justification.bottom,
-            Justification['center-vertical'],
-          ],
-          middle: [
-            Justification['center-vertical'],
-            Justification.bottom,
-            Justification.top,
-          ],
-          end: [
-            Justification.bottom,
-            Justification.top,
-            Justification['center-vertical'],
-          ],
-        };
-        break;
-      }
-
-      case 'top':
-      case 'bottom':
-      default: {
-        justifications = {
-          start: [
-            Justification.left,
-            Justification.right,
-            Justification['center-horizontal'],
-          ],
-          middle: [
-            Justification['center-horizontal'],
-            Justification.right,
-            Justification.left,
-          ],
-          end: [
-            Justification.right,
-            Justification.left,
-            Justification['center-horizontal'],
-          ],
-        };
-        break;
-      }
-    }
-
-    return (
-      justifications[justify].find(candidate => {
-        return this.checkJustification(candidate);
-      }) || justifications[justify][0]
-    );
-  }
-
-  // Checks that an alignment will not cause the popover to collide with the window.
-  checkAlignment(alignment: Align) {
-    const top = this.calcTop({ alignment });
-    const left = this.calcLeft({ alignment });
-
-    if (['top', 'bottom'].includes(alignment)) {
-      return this.checkVerticalWindowCollision(top);
-    }
-
-    if (['left', 'right'].includes(alignment)) {
-      return this.checkHorizontalWindowCollision(left);
-    }
-
-    return false;
-  }
-
-  // Checks that a justification will not cause the popover to collide with the window.
-  checkJustification(justification: Justification) {
-    const top = this.calcTop({ justification });
-    const left = this.calcLeft({ justification });
-
-    if (['top', 'bottom', 'center-vertical'].includes(justification)) {
-      return this.checkVerticalWindowCollision(top);
-    }
-
-    if (['left', 'right', 'center-horizontal'].includes(justification)) {
-      return this.checkHorizontalWindowCollision(left);
-    }
-
-    return false;
-  }
-
-  // Check if horizontal position collides with edge of window
-  checkHorizontalWindowCollision(left: number) {
-    const { contentElPos } = this.state;
-    const tooWide = left + contentElPos.width > this.state.windowWidth;
-
-    return !(left < 0 || tooWide);
-  }
-
-  // Check if vertical position collides with edge of window
-  checkVerticalWindowCollision(top: number) {
-    const { contentElPos } = this.state;
-    const tooTall = top + contentElPos.height > this.state.windowHeight;
-
-    return !(top < 0 || tooTall);
-  }
-
-  // Returns the 'top' position in pixels for a valid alignment or justification.
-  calcTop({ alignment, justification }: AbstractPosition) {
-    const { referenceElPos, contentElPos } = this.state;
-
-    switch (justification) {
-      case Justification.top:
-        return referenceElPos.top;
-
-      case Justification.bottom:
-        return referenceElPos.top + referenceElPos.height - contentElPos.height;
-
-      case Justification['center-vertical']:
-        return (
-          referenceElPos.top +
-          referenceElPos.height / 2 -
-          contentElPos.height / 2
-        );
-    }
-
-    switch (alignment) {
-      case Align.top:
-        return referenceElPos.top - contentElPos.height;
-
-      case Align.bottom:
-      default:
-        return referenceElPos.top + referenceElPos.height;
-    }
-  }
-
-  // Returns the 'left' position in pixels for a valid alignment or justification.
-  calcLeft({ alignment, justification }: AbstractPosition) {
-    const { referenceElPos, contentElPos } = this.state;
-
-    switch (alignment) {
-      case Align.left:
-        return referenceElPos.left - contentElPos.width;
-
-      case Align.right:
-        return referenceElPos.left + referenceElPos.width;
-    }
-
-    switch (justification) {
-      case Justification.right:
-        return referenceElPos.left + referenceElPos.width - contentElPos.width;
-
-      case Justification['center-horizontal']:
-        return (
-          referenceElPos.left +
-          referenceElPos.width / 2 -
-          contentElPos.width / 2
-        );
-
-      case Justification.left:
-      default:
-        return referenceElPos.left;
-    }
-  }
-
-  // Returns positioning for an element absolutely positioned within it's relative parent
-  calcPositionWithoutPortal({ alignment, justification }: AbstractPosition) {
-    const { referenceElPos, contentElPos } = this.state;
-    const positionObject: AbsolutePositionObject = {};
-
-    switch (alignment) {
-      case Align.top:
-        positionObject.bottom = '100%';
-        break;
-
-      case Align.bottom:
-        positionObject.top = '100%';
-        break;
-
-      case Align.left:
-        positionObject.right = '100%';
-        break;
-
-      case Align.right:
-        positionObject.left = '100%';
-        break;
-    }
-
-    switch (justification) {
-      case Justification.top:
-        positionObject.top = 0;
-        break;
-
-      case Justification.bottom:
-        positionObject.bottom = 0;
-        break;
-
-      case Justification.left:
-        positionObject.left = 0;
-        break;
-
-      case Justification.right:
-        positionObject.right = 0;
-        break;
-
-      case Justification['center-horizontal']:
-        positionObject.left = referenceElPos.width / 2 - contentElPos.width / 2;
-        break;
-
-      case Justification['center-vertical']:
-        positionObject.top =
-          referenceElPos.height / 2 - contentElPos.height / 2;
-        break;
-    }
-
-    return positionObject;
-  }
-
-  // Get transform styles for position object
-  getTransform(alignment: Align) {
-    const transformAmount = 12;
-    const scaleAmount = 0.8;
-
-    switch (alignment) {
-      case Align.top:
-        return `translate3d(0, ${transformAmount}px, 0) scale(${scaleAmount})`;
-
-      case Align.bottom:
-        return `translate3d(0, -${transformAmount}px, 0) scale(${scaleAmount})`;
-
-      case Align.left:
-        return `translate3d(${transformAmount}px, 0, 0) scale(${scaleAmount})`;
-
-      case Align.right:
-        return `translate3d(-${transformAmount}px, 0, 0) scale(${scaleAmount})`;
-    }
-  }
-
-  // Constructs the transform origin for any given pair of alignment / justification
-  getTransformOrigin({ alignment, justification }: AbstractPosition) {
-    let x: string = '';
-    let y: string = '';
-
-    switch (alignment) {
-      case Align.left:
-        x = 'right';
-        break;
-
-      case Align.right:
-        x = 'left';
-        break;
-
-      case Align.bottom:
-        y = 'top';
-        break;
-
-      case Align.top:
-        y = 'bottom';
-        break;
-    }
-
-    switch (justification) {
-      case Justification.left:
-        x = 'left';
-        break;
-
-      case Justification.right:
-        x = 'right';
-        break;
-
-      case Justification.bottom:
-        y = 'top';
-        break;
-
-      case Justification.top:
-        y = 'bottom';
-        break;
-
-      case Justification['center-horizontal']:
-        x = 'center';
-        break;
-
-      case Justification['center-vertical']:
-        y = 'center';
-        break;
-    }
-
-    return `${x} ${y}`;
   }
 
   contentRef = React.createRef<HTMLDivElement>();
